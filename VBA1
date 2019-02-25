@@ -1,61 +1,37 @@
 Sub Macro1()
+Dim TheSecondListData As Collection
+Set TheSecondListData = CreateObjects("B1:E1", "Sheet2")
 
-Dim Sh1Coll As New Collection
-Dim Sh2Coll As New Collection
-Dim k1 As Integer, k2 As Integer
-Dim ID As String
-Dim SumArray(1 To 4) As Variant
-Dim GetArray As Variant, g As Variant
 
-Set sh1 = Sheets("Sheet1")
-Set sh2 = Sheets("Sheet2")
 
-k1 = 2
-k2 = 2
+Dim k1 As Integer
+Set SH1 = Sheets("Sheet1")
 
-sh1.UsedRange 'Refresh UsedRange
-  LastRowsh1 = sh1.UsedRange.Rows(sh1.UsedRange.Rows.Count).Row
-   sh2.UsedRange 'Refresh UsedRange
-  LastRowsh2 = sh2.UsedRange.Rows(sh1.UsedRange.Rows.Count).Row
 
-    Do While k2 <> LastRowsh2 'checking 2nd sheet until the end
-         For j = 2 To 5 Step 1 ' checking columns
-    
-            If sh2.Cells(k2, j) <> "" Then   'checking SUM Cell
-                SumArray(j - 1) = sh2.Cells(k2, j) ' Create array with SUM..
-            End If
-    
-        Next j
-        ID = sh2.Cells(k2, 1)
-        k2 = k2 + 1
-         
+SH1.UsedRange 'Refresh UsedRange
+LastRowsh1 = SH1.UsedRange.Rows(SH1.UsedRange.Rows.Count).Row
    
-   Sh2Coll.Add SumArray, ID ' Pushing array to Collection
-    
-   Erase SumArray
-Loop
 
-' Filling the 1st Sheet
-   
-For k1 = 2 To LastRowsh1
+
+For k1 = 2 To (LastRowsh1 + 1)
         
-    If Exists(Sh2Coll, sh1.Cells(k1, 2)) Then ' Checking ID
+    If Exists(TheSecondListData, SH1.Cells(k1, 2)) Then ' Checking ID
        
-       GetArray = Sh2Coll.Item(CStr(sh1.Cells(k1, 2)))
+       GetArray = TheSecondListData.Item(CStr(SH1.Cells(k1, 2)))
        For g = LBound(GetArray) To UBound(GetArray)
-            If IsEmpty(GetArray(g)) = False Then 'If there is no SUM in Array - skip, else
+            If IsEmpty(GetArray(g, 2)) = False Then 'If there is no SUM in Array - skip, else
        
-                If IsEmpty(sh1.Cells(k1, 3)) = True Then  ' Checking that Cell is empty
-                    sh1.Cells(k1, 3) = g  ' Sheet1.Cat = Sheet2.CategoryRow
-                    sh1.Cells(k1, 4) = GetArray(g)  'Entering sum
+                If IsEmpty(SH1.Cells(k1, 3)) = True Then  ' Checking that Cell is empty
+                    SH1.Cells(k1, 3) = GetArray(g, 1) ' Entering CAt
+                    SH1.Cells(k1, 4) = GetArray(g, 2) 'Entering sum
                 Else  ' adding a row in case Cell already has SUM
                     k1 = k1 + 1
-                 sh1.UsedRange 'Refresh UsedRange
-                    LastRowsh1 = sh1.UsedRange.Rows(sh1.UsedRange.Rows.Count).Row + 1
-                   Range(sh1.Rows(k1), sh1.Rows(k1)).Insert Shift:=x1Down
-                    sh1.Cells(k1, 3) = g  ' Sheet1.Cat = Sheet2.CategoryRow
-                    sh1.Cells(k1, 4) = GetArray(g) 'Entering sum
-                    sh1.Cells(k1, 5) = "X" ' Entering Property
+                 SH1.UsedRange 'Refresh UsedRange
+                    LastRowsh1 = SH1.UsedRange.Rows(SH1.UsedRange.Rows.Count).Row + 1
+                   Range(SH1.Rows(k1), SH1.Rows(k1)).Insert Shift:=x1Down
+                    SH1.Cells(k1, 3) = GetArray(g, 1)  ' Entering CAt
+                    SH1.Cells(k1, 4) = GetArray(g, 2) 'Entering sum
+                    SH1.Cells(k1, 5) = "X" ' Entering Property
                     
                 End If
             End If
@@ -64,10 +40,13 @@ For k1 = 2 To LastRowsh1
 
       End If
   
-  sh1.UsedRange 'Refresh UsedRange
-  LastRowsh1 = sh1.UsedRange.Rows(sh1.UsedRange.Rows.Count).Row
+  SH1.UsedRange 'Refresh UsedRange
+  LastRowsh1 = SH1.UsedRange.Rows(SH1.UsedRange.Rows.Count).Row
   
 Next k1
+
+
+
 
 
 End Sub
@@ -81,3 +60,81 @@ Function Exists(coll As Collection, key As String) As Boolean
     Exists = True
 EH:
 End Function
+
+
+Function CreateObjects(Rng As String, Sht As String)
+
+'On Error GoTo EH
+
+Dim SumArray() As Variant
+Dim sh2 As Worksheet
+Dim k2 As Integer
+Dim Sh2Coll As New Collection
+Dim ID As String
+Dim CatRange As Range
+
+Set Sh2Coll = New Collection
+Set sh2 = ActiveWorkbook.Worksheets(Sht)
+sh2.Activate
+Set CatRange = Range(Rng)
+
+
+
+k2 = 2
+
+
+
+
+
+'LastRowsh2 = sh2.UsedRange.Rows(sh2.UsedRange.Rows.Count).Row
+
+LastRowsh2 = sh2.UsedRange.Rows.Count
+
+
+
+
+Do While k2 <> (LastRowsh2 + 1) 'checking 2nd sheet until the end
+      ReDim SumArray(1 To CatRange.Columns.Count, 1 To 2)
+      If IsEmpty(sh2.Cells(k2, 1)) = False Then  ' if ID Empty - skip
+        For j = 1 To CatRange.Columns.Count Step 1         ' checking columns
+                 SumArray(j, 1) = CatRange.Item(j) '  Add Category to array
+        Next j
+          For j = 1 To CatRange.Columns.Count
+            If IsEmpty(sh2.Cells(k2, j + 1)) = False Then 'checking SUM Cell
+                SumArray(j, 2) = sh2.Cells(k2, j + 1) ' Create array with SUM..
+            End If
+          Next j
+  ID = sh2.Cells(k2, 1)
+       
+
+   Sh2Coll.Add SumArray, ID ' Pushing array to Collection
+
+   Erase SumArray
+   
+   End If
+   
+  
+   k2 = k2 + 1
+    j = 1
+   
+   
+   
+Loop
+
+
+' EH:
+
+Set CreateObjects = Sh2Coll
+
+End Function
+
+
+
+
+
+
+
+
+  
+    
+
